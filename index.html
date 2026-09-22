@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhysioConnect | On-Demand BPT Consultation & Home Visits</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome for Healthcare & UI Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+            },
+            tealMed: {
+              500: '#0d9488',
+              600: '#0f766e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom clean scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    
+    /* Device Mockup framing simulation */
+    .mobile-frame {
+      max-width: 440px;
+      margin: 0 auto;
+      min-height: 844px;
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+      border: 8px solid #0f172a;
+      border-radius: 40px;
+      overflow: hidden;
+      position: relative;
+    }
+    .mobile-notch {
+      width: 140px;
+      height: 24px;
+      background: #0f172a;
+      margin: 0 auto;
+      border-bottom-left-radius: 14px;
+      border-bottom-right-radius: 14px;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+    }
+    .pulse-ring {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { box-shadow: 0 0 0 14px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen">
+
+  <!-- Top Global Prototype Bar for View Switching -->
+  <header class="bg-slate-900 text-white sticky top-0 z-50 border-b border-slate-800 px-4 py-2.5">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <span class="bg-gradient-to-r from-emerald-500 to-teal-500 p-2 rounded-xl text-white shadow-md">
+          <i class="fa-solid fa-hand-holding-medical text-lg"></i>
+        </span>
+        <div>
+          <h1 class="text-sm md:text-base font-bold tracking-tight">PhysioConnect <span class="text-emerald-400 font-medium text-xs">BPT On-Demand</span></h1>
+          <p class="text-[11px] text-slate-400">70/30 Revenue Split &bull; 10-15km Geofenced Matching</p>
+        </div>
+      </div>
+
+      <!-- View Selector -->
+      <div class="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700 text-xs font-semibold">
+        <button onclick="switchView('patient')" id="tab-patient" class="role-tab px-3 py-1.5 rounded-lg transition-all text-white bg-emerald-600 shadow flex items-center gap-1.5">
+          <i class="fa-solid fa-user-injured"></i> Patient App
+        </button>
+        <button onclick="switchView('doctor')" id="tab-doctor" class="role-tab px-3 py-1.5 rounded-lg transition-all text-slate-400 hover:text-white flex items-center gap-1.5">
+          <i class="fa-solid fa-user-doctor"></i> Doctor Portal
+        </button>
+        <button onclick="switchView('admin')" id="tab-admin" class="role-tab px-3 py-1.5 rounded-lg transition-all text-slate-400 hover:text-white flex items-center gap-1.5">
+          <i class="fa-solid fa-shield-halved"></i> Admin Hub
+        </button>
+      </div>
+
+      <!-- Device Viewport Toggle & Help -->
+      <div class="flex items-center gap-2">
+        <button onclick="toggleDeviceFrame()" id="frameToggleBtn" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center gap-1.5 border border-slate-700">
+          <i class="fa-solid fa-mobile-screen"></i>
+          <span id="frameToggleText">Mobile Frame</span>
+        </button>
+        <button onclick="openDoctorRegModal()" class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-xs font-medium border border-emerald-500/40">
+          <i class="fa-solid fa-stethoscope mr-1"></i> BPT Doctor Signup
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container (Can switch between mobile simulator and wide web canvas) -->
+  <main id="appContainer" class="py-6 px-3 md:px-6 transition-all duration-300">
+    <div id="wrapperBox" class="transition-all duration-300">
+
+      <!-- ================= PATIENT VIEW ================= -->
+      <section id="patientView" class="space-y-4">
+        
+        <!-- Mobile Frame Top Status Simulation (Shown when frame is active) -->
+        <div class="mobile-notch hidden" id="notchBar"></div>
+        
+        <!-- Patient Top Bar -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold">
+              <i class="fa-regular fa-user"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400 font-medium">Hello, Rahul Sharma</p>
+              <div class="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                <i class="fa-solid fa-location-dot text-emerald-500"></i>
+                <span id="patientCurrentLocText">South Ext, New Delhi (Within 12km)</span>
+                <button onclick="changePatientLocationModal()" class="text-emerald-600 hover:underline text-[11px] ml-1">Change</button>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="openPatientBookingsList()" class="relative p-2 text-slate-500 hover:text-emerald-600 bg-slate-50 hover:bg-emerald-50 rounded-xl transition">
+              <i class="fa-solid fa-clipboard-list text-base"></i>
+              <span id="bookingCountBadge" class="absolute -top-1 -right-1 bg-emerald-600 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">1</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Promo Banner: 1st Video Call Free -->
+        <div class="bg-gradient-to-r from-teal-600 to-emerald-600 rounded-2xl p-4 text-white shadow-md relative overflow-hidden">
+          <div class="relative z-10">
+            <span class="bg-white/20 backdrop-blur-sm text-[11px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+              New Patient Welcome
+            </span>
+            <h2 class="text-lg font-bold mt-1">1st Video Consultation is 100% FREE!</h2>
+            <p class="text-xs text-emerald-50 mt-1 max-w-sm">Connect with a certified BPT physiotherapist from home. No charges for first 15 mins session.</p>
+            <button onclick="startQuickVideoBook()" class="mt-3 bg-white text-emerald-700 hover:bg-emerald-50 text-xs font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-1.5">
+              <i class="fa-solid fa-video"></i> Claim Free Video Call
+            </button>
+          </div>
+          <i class="fa-solid fa-laptop-medical absolute -bottom-4 -right-3 text-white/15 text-8xl pointer-events-none"></i>
+        </div>
+
+        <!-- Service Mode Switcher -->
+        <div class="grid grid-cols-3 gap-2">
+          <button onclick="selectServiceMode('home')" id="mode-home" class="service-mode-btn bg-white border-2 border-emerald-500 p-3 rounded-2xl text-center shadow-sm transition">
+            <div class="w-10 h-10 mx-auto rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1 text-base">
+              <i class="fa-solid fa-house-chimney-medical"></i>
+            </div>
+            <span class="text-xs font-bold block text-slate-800">Home Visit</span>
+            <span class="text-[10px] text-slate-500">Therapist travels to you</span>
+          </button>
+
+          <button onclick="selectServiceMode('clinic')" id="mode-clinic" class="service-mode-btn bg-white border border-slate-200 p-3 rounded-2xl text-center shadow-sm transition hover:border-slate-300">
+            <div class="w-10 h-10 mx-auto rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center mb-1 text-base">
+              <i class="fa-solid fa-hospital-user"></i>
+            </div>
+            <span class="text-xs font-bold block text-slate-800">Clinic Visit</span>
+            <span class="text-[10px] text-slate-500">Visit nearby clinic</span>
+          </button>
+
+          <button onclick="selectServiceMode('video')" id="mode-video" class="service-mode-btn bg-white border border-slate-200 p-3 rounded-2xl text-center shadow-sm transition hover:border-slate-300">
+            <div class="w-10 h-10 mx-auto rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center mb-1 text-base">
+              <i class="fa-solid fa-video"></i>
+            </div>
+            <span class="text-xs font-bold block text-slate-800">Video Consult</span>
+            <span class="text-[10px] text-emerald-600 font-semibold">1st Call Free</span>
+          </button>
+        </div>
+
+        <!-- Booking Approach Selection: Auto-Match vs Specific Doctor -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-sliders text-emerald-600"></i> Choose How to Book
+            </h3>
+            <span class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-medium">10-15 km radius</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <!-- Option 1: Instant Auto Match -->
+            <label class="relative flex flex-col p-3 rounded-xl border-2 border-emerald-500 bg-emerald-50/40 cursor-pointer transition hover:bg-emerald-50" id="boxMatchAuto">
+              <input type="radio" name="matchType" value="auto" checked onchange="handleMatchTypeChange('auto')" class="absolute top-3 right-3 text-emerald-600 focus:ring-emerald-500">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs">
+                  <i class="fa-solid fa-bolt"></i>
+                </span>
+                <span class="text-xs font-bold text-slate-800">Any Available Doctor</span>
+              </div>
+              <p class="text-[11px] text-slate-600">Instantly assigns the nearest qualified BPT therapist within 10-15 km based on current slots.</p>
+              <div class="mt-2 flex items-center justify-between text-xs font-semibold text-emerald-700">
+                <span>Standard Rate</span>
+                <span>From ₹599</span>
+              </div>
+            </label>
+
+            <!-- Option 2: Specific Doctor Choice -->
+            <label class="relative flex flex-col p-3 rounded-xl border border-slate-200 bg-white cursor-pointer transition hover:border-emerald-300" id="boxMatchSpecific">
+              <input type="radio" name="matchType" value="specific" onchange="handleMatchTypeChange('specific')" class="absolute top-3 right-3 text-emerald-600 focus:ring-emerald-500">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="w-6 h-6 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center text-xs">
+                  <i class="fa-solid fa-user-check"></i>
+                </span>
+                <span class="text-xs font-bold text-slate-800">Choose Specific Doctor</span>
+              </div>
+              <p class="text-[11px] text-slate-600">Pick preferred specialist, view verified credentials and book their exact open schedule.</p>
+              <div class="mt-2 flex items-center justify-between text-xs font-semibold text-slate-600">
+                <span>Custom Doctor Slot</span>
+                <span class="text-amber-600">+₹150 Specific Doctor Fee</span>
+              </div>
+            </label>
+          </div>
+
+          <!-- Doctor Selection Carousel (Conditional: Only if "Choose Specific Doctor" is checked) -->
+          <div id="specificDoctorPickerArea" class="hidden mt-4 pt-4 border-t border-slate-100">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-xs font-bold text-slate-700">Verified BPT Specialists Nearby (&lt; 15km):</label>
+              <span class="text-[11px] text-slate-400">Sorted by distance</span>
+            </div>
+
+            <div class="space-y-2.5 max-h-56 overflow-y-auto pr-1" id="doctorSelectList">
+              <!-- Dynamically populated doctors -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Issue / Pain Area Selector -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+          <h3 class="text-sm font-bold text-slate-800 mb-2.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-bone text-emerald-600"></i> What are you seeking treatment for?
+          </h3>
+          <div class="flex flex-wrap gap-2" id="treatmentTags">
+            <button onclick="toggleConditionTag(this, 'Lower Back Pain')" class="cond-tag px-3 py-1.5 rounded-xl border border-emerald-500 bg-emerald-50 text-emerald-700 font-medium text-xs">
+              Lower Back Pain
+            </button>
+            <button onclick="toggleConditionTag(this, 'Cervical / Neck Pain')" class="cond-tag px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-xs hover:border-slate-300">
+              Cervical &amp; Neck Pain
+            </button>
+            <button onclick="toggleConditionTag(this, 'Knee / Joint Rehab')" class="cond-tag px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-xs hover:border-slate-300">
+              Knee / Joint Rehab
+            </button>
+            <button onclick="toggleConditionTag(this, 'Sports Injury')" class="cond-tag px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-xs hover:border-slate-300">
+              Sports Injury
+            </button>
+            <button onclick="toggleConditionTag(this, 'Post-Op Rehab')" class="cond-tag px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-xs hover:border-slate-300">
+              Post-Surgery Rehab
+            </button>
+            <button onclick="toggleConditionTag(this, 'Stroke / Neuro Physio')" class="cond-tag px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-xs hover:border-slate-300">
+              Neuro Rehab
+            </button>
+          </div>
+        </div>
+
+        <!-- Date & Slot Picker -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+          <h3 class="text-sm font-bold text-slate-800 mb-2.5 flex items-center gap-1.5">
+            <i class="fa-regular fa-calendar-check text-emerald-600"></i> Select Date &amp; Time Slot
+          </h3>
+          <!-- Day selector -->
+          <div class="grid grid-cols-4 gap-2 mb-3">
+            <button onclick="selectDay(this, 'Today, 21 Sep')" class="day-btn py-2 px-1 text-center rounded-xl border-2 border-emerald-600 bg-emerald-50/50 text-slate-800 text-xs font-semibold">
+              <span class="block text-[10px] text-emerald-600 font-bold">TODAY</span>
+              21 Sep
+            </button>
+            <button onclick="selectDay(this, 'Tomorrow, 22 Sep')" class="day-btn py-2 px-1 text-center rounded-xl border border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-semibold">
+              <span class="block text-[10px] text-slate-400">TOMORROW</span>
+              22 Sep
+            </button>
+            <button onclick="selectDay(this, 'Wed, 23 Sep')" class="day-btn py-2 px-1 text-center rounded-xl border border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-semibold">
+              <span class="block text-[10px] text-slate-400">WED</span>
+              23 Sep
+            </button>
+            <button onclick="selectDay(this, 'Thu, 24 Sep')" class="day-btn py-2 px-1 text-center rounded-xl border border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-semibold">
+              <span class="block text-[10px] text-slate-400">THU</span>
+              24 Sep
+            </button>
+          </div>
+
+          <!-- Time slots -->
+          <div class="grid grid-cols-3 gap-2" id="slotButtons">
+            <button onclick="selectTimeSlot(this, '10:00 AM - 11:00 AM')" class="time-btn border-2 border-emerald-600 bg-emerald-50 text-emerald-800 py-1.5 px-2 rounded-lg text-xs font-medium text-center">
+              10:00 AM
+            </button>
+            <button onclick="selectTimeSlot(this, '02:00 PM - 03:00 PM')" class="time-btn border border-slate-200 hover:border-slate-300 text-slate-700 py-1.5 px-2 rounded-lg text-xs font-medium text-center">
+              02:00 PM
+            </button>
+            <button onclick="selectTimeSlot(this, '06:00 PM - 07:00 PM')" class="time-btn border border-slate-200 hover:border-slate-300 text-slate-700 py-1.5 px-2 rounded-lg text-xs font-medium text-center">
+              06:00 PM
+            </button>
+          </div>
+        </div>
+
+        <!-- Pricing Summary with 70% Doctor / 30% Platform Transparency -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-bold text-slate-800">Cost &amp; Payment Breakdown</h3>
+            <span class="text-[10px] text-slate-400 font-mono">Invoice Summary</span>
+          </div>
+
+          <div class="space-y-1.5 text-xs text-slate-600 pb-3 border-b border-slate-100">
+            <div class="flex justify-between">
+              <span>Physiotherapy Base Fee (<span id="summaryServiceName">Home Visit</span>)</span>
+              <span class="font-medium text-slate-800" id="summaryBasePrice">₹700</span>
+            </div>
+            <div class="flex justify-between" id="specificFeeRow" style="display: none;">
+              <span>Specific Doctor Selection Surcharge</span>
+              <span class="font-medium text-amber-600">+₹150</span>
+            </div>
+            <div class="flex justify-between text-emerald-600" id="discountRow" style="display: none;">
+              <span>1st Video Call Promo (100% OFF)</span>
+              <span class="font-medium" id="summaryDiscount">-₹400</span>
+            </div>
+            <div class="flex justify-between text-[11px] text-slate-400 pt-1">
+              <span>Platform &amp; Travel Operations (Includes 30% cut)</span>
+              <span id="summaryCutInfo">₹210 retained</span>
+            </div>
+          </div>
+
+          <div class="pt-3 flex items-center justify-between">
+            <div>
+              <p class="text-[11px] text-slate-400">Total Payable Amount</p>
+              <p class="text-xl font-extrabold text-slate-900" id="summaryFinalPrice">₹700</p>
+            </div>
+            <button onclick="proceedToBookingConfirmation()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs md:text-sm px-6 py-2.5 rounded-xl shadow-md transition flex items-center gap-2">
+              <span>Confirm &amp; Book</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ================= DOCTOR PORTAL VIEW ================= -->
+      <section id="doctorView" class="space-y-4 hidden">
+        <!-- Doctor Profile Card & Online Toggle -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80">
+          <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div class="flex items-center space-x-3">
+              <div class="relative">
+                <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80" class="w-14 h-14 rounded-2xl object-cover border-2 border-emerald-500 shadow-sm" alt="Dr Ankit">
+                <span class="absolute -bottom-1 -right-1 bg-emerald-500 w-4 h-4 rounded-full border-2 border-white"></span>
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <h2 class="text-base font-bold text-slate-900">Dr. Ankit Verma, BPT, MPT</h2>
+                  <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <i class="fa-solid fa-certificate"></i> Verified BPT
+                  </span>
+                </div>
+                <p class="text-xs text-slate-500">Orthopedic &amp; Sports Specialist &bull; 6 Yrs Exp</p>
+                <p class="text-xs text-slate-400 mt-0.5"><i class="fa-solid fa-location-dot text-emerald-500"></i> Clinic: Hauz Khas, Delhi</p>
+              </div>
+            </div>
+
+            <!-- Online / Offline toggle -->
+            <div class="flex items-center space-x-3 bg-slate-50 p-2 rounded-xl border border-slate-200">
+              <span class="text-xs font-semibold text-slate-700" id="doctorStatusLabel">Accepting Patients</span>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked id="doctorDutyToggle" onchange="toggleDoctorDuty(this)" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Radius and Coverage Controls -->
+          <div class="mt-4 pt-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <div class="flex justify-between items-center mb-1">
+                <label class="text-xs font-bold text-slate-700">Home Visit Radius Range</label>
+                <span class="text-xs font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md" id="radiusDisplay">12 km</span>
+              </div>
+              <input type="range" min="5" max="20" value="12" step="1" oninput="updateRadius(this.value)" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+              <p class="text-[11px] text-slate-400 mt-1">Patients beyond this distance will be referred to therapists closer to them.</p>
+            </div>
+
+            <!-- Quick Service Capabilities -->
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-around">
+              <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                <input type="checkbox" checked class="rounded text-emerald-600 accent-emerald-600">
+                <span>Home Visit</span>
+              </label>
+              <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                <input type="checkbox" checked class="rounded text-emerald-600 accent-emerald-600">
+                <span>Clinic Booking</span>
+              </label>
+              <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                <input type="checkbox" checked class="rounded text-emerald-600 accent-emerald-600">
+                <span>Video Call</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Doctor Earnings Card: 70% Doctor Share Model -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <p class="text-xs text-slate-500 font-medium">Doctor Payout (70% Share)</p>
+            <p class="text-2xl font-black text-emerald-700 mt-1" id="docEarningsDisplay">₹18,900</p>
+            <span class="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-semibold mt-2 inline-block">Direct Weekly Settlement</span>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <p class="text-xs text-slate-500 font-medium">Completed Sessions</p>
+            <p class="text-2xl font-black text-slate-900 mt-1" id="docCompletedCount">27</p>
+            <span class="text-[10px] text-slate-400 font-medium mt-2 inline-block">19 Home &bull; 8 Video</span>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <p class="text-xs text-slate-500 font-medium">Patient Satisfaction</p>
+            <div class="flex items-center gap-1 mt-1">
+              <span class="text-2xl font-black text-amber-500">4.9</span>
+              <div class="flex text-amber-400 text-xs">
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+              </div>
+            </div>
+            <span class="text-[10px] text-slate-400 font-medium mt-2 inline-block">Based on 34 patient reviews</span>
+          </div>
+        </div>
+
+        <!-- Appointments Queue -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Your Appointment Schedule</h3>
+              <p class="text-xs text-slate-400">Upcoming home visits, clinics, and video consultations</p>
+            </div>
+            <span class="text-xs bg-emerald-50 text-emerald-700 font-bold px-2.5 py-1 rounded-lg">Today: 3 Bookings</span>
+          </div>
+
+          <!-- Appointment Cards list -->
+          <div class="space-y-3" id="doctorAppointmentsList">
+            <!-- Items injected by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= ADMIN DASHBOARD VIEW ================= -->
+      <section id="adminView" class="space-y-4 hidden">
+        <!-- Admin KPI Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-xs text-slate-400 font-semibold uppercase">Total Platform Volume</p>
+                <h3 class="text-2xl font-extrabold text-slate-900 mt-1" id="adminTotalVolume">₹1,42,800</h3>
+              </div>
+              <span class="p-2.5 bg-blue-50 text-blue-600 rounded-xl text-sm">
+                <i class="fa-solid fa-chart-line"></i>
+              </span>
+            </div>
+            <p class="text-[11px] text-emerald-600 font-semibold mt-2"><i class="fa-solid fa-arrow-trend-up"></i> +18% this week</p>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-emerald-600">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-xs text-emerald-800 font-semibold uppercase">Admin Commission (30%)</p>
+                <h3 class="text-2xl font-extrabold text-emerald-700 mt-1" id="adminRevenue30">₹42,840</h3>
+              </div>
+              <span class="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl text-sm">
+                <i class="fa-solid fa-vault"></i>
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-2">Retained platform net revenue</p>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-xs text-slate-400 font-semibold uppercase">Doctor Payouts (70%)</p>
+                <h3 class="text-2xl font-extrabold text-slate-900 mt-1" id="adminDoctorPayout70">₹99,960</h3>
+              </div>
+              <span class="p-2.5 bg-purple-50 text-purple-600 rounded-xl text-sm">
+                <i class="fa-solid fa-hand-holding-dollar"></i>
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-2">Disbursed to verified therapists</p>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-xs text-slate-400 font-semibold uppercase">Active Doctors / Radius</p>
+                <h3 class="text-2xl font-extrabold text-slate-900 mt-1">42 BPTs</h3>
+              </div>
+              <span class="p-2.5 bg-amber-50 text-amber-600 rounded-xl text-sm">
+                <i class="fa-solid fa-user-doctor"></i>
+              </span>
+            </div>
+            <p class="text-[11px] text-amber-600 font-medium mt-2"><i class="fa-solid fa-clock"></i> 3 Pending Verification</p>
+          </div>
+        </div>
+
+        <!-- Doctor Verification Portal Table -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <i class="fa-solid fa-user-check text-emerald-600"></i> Doctor Registration &amp; BPT License Approvals
+              </h3>
+              <p class="text-xs text-slate-400">Review council registrations before doctors are visible to patients</p>
+            </div>
+            <span class="text-xs bg-amber-100 text-amber-800 font-semibold px-2.5 py-1 rounded-md">Queue: 2 Approvals Needed</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-[10px] tracking-wider">
+                <tr>
+                  <th class="p-3">Doctor / Clinic</th>
+                  <th class="p-3">Degree &amp; Council ID</th>
+                  <th class="p-3">Base Location</th>
+                  <th class="p-3">Radius</th>
+                  <th class="p-3">Status</th>
+                  <th class="p-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100" id="adminDoctorApprovalRows">
+                <!-- Injected via script -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Real-time Bookings Feed -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-slate-900">Recent Platform Transactions &amp; Bookings</h3>
+            <span class="text-[11px] text-slate-400">Live split computation</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-[10px]">
+                <tr>
+                  <th class="p-2.5">Booking ID</th>
+                  <th class="p-2.5">Patient</th>
+                  <th class="p-2.5">Assigned Doctor</th>
+                  <th class="p-2.5">Mode</th>
+                  <th class="p-2.5">Total Paid</th>
+                  <th class="p-2.5 text-emerald-700">Admin Cut (30%)</th>
+                  <th class="p-2.5 text-blue-700">Doctor Share (70%)</th>
+                  <th class="p-2.5">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-mono text-[11px]" id="adminTransactionsBody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  
+  <!-- MODAL: Simulated Live Video Consultation -->
+  <div id="videoModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-3">
+    <div class="bg-slate-900 rounded-3xl w-full max-w-xl overflow-hidden border border-slate-800 shadow-2xl relative">
+      <!-- Top Video Bar -->
+      <div class="p-4 flex items-center justify-between text-white border-b border-slate-800/80">
+        <div class="flex items-center space-x-2">
+          <span class="w-3 h-3 rounded-full bg-emerald-500 pulse-ring"></span>
+          <div>
+            <h4 class="text-xs font-bold" id="videoDoctorTitle">Consultation: Dr. Ankit Verma (BPT)</h4>
+            <p class="text-[10px] text-emerald-400" id="videoTagline">1st Free Consultation Active &bull; HD Encrypted</p>
+          </div>
+        </div>
+        <div class="bg-slate-800 px-3 py-1 rounded-full text-xs font-mono text-emerald-400" id="callTimerDisplay">
+          14:52 left
+        </div>
+      </div>
+
+      <!-- Main Video Window -->
+      <div class="relative h-72 sm:h-96 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <!-- Mock Doctor Video Feed -->
+        <div class="text-center p-6">
+          <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=200&auto=format&fit=crop&q=80" class="w-24 h-24 rounded-full mx-auto border-4 border-emerald-500/80 shadow-lg object-cover mb-3" alt="Doctor stream">
+          <p class="text-white font-bold text-sm">Dr. Ankit Verma</p>
+          <p class="text-emerald-400 text-xs mt-1">"Please raise your left arm to test the mobility range..."</p>
+        </div>
+
+        <!-- Self Floating PIP Camera preview -->
+        <div class="absolute bottom-4 right-4 w-28 h-36 rounded-xl bg-slate-950 border-2 border-slate-700 shadow-md flex items-center justify-center overflow-hidden">
+          <div class="text-center p-2">
+            <i class="fa-solid fa-user text-slate-400 text-xl"></i>
+            <span class="block text-[10px] text-slate-300 mt-1 font-sans">You (Patient)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video Control Actions -->
+      <div class="p-4 bg-slate-950/90 flex items-center justify-center space-x-4">
+        <button onclick="toggleCallControl(this, 'mic')" class="w-11 h-11 rounded-full bg-slate-800 text-white hover:bg-slate-700 flex items-center justify-center transition">
+          <i class="fa-solid fa-microphone"></i>
+        </button>
+        <button onclick="toggleCallControl(this, 'cam')" class="w-11 h-11 rounded-full bg-slate-800 text-white hover:bg-slate-700 flex items-center justify-center transition">
+          <i class="fa-solid fa-video"></i>
+        </button>
+        <button onclick="endVideoCall()" class="px-6 py-2.5 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-lg">
+          <i class="fa-solid fa-phone-slash"></i> End Consultation
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Doctor Registration Portal (Dedicated Link, Clean & Separated) -->
+  <div id="doctorRegModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-3">
+    <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-100">
+      <div class="bg-gradient-to-r from-slate-900 to-emerald-950 text-white p-5 flex items-center justify-between">
+        <div>
+          <span class="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Physiotherapist Partner Network</span>
+          <h3 class="text-base font-bold">Join as a Verified BPT Specialist</h3>
+        </div>
+        <button onclick="closeDoctorRegModal()" class="text-slate-400 hover:text-white text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form onsubmit="submitDoctorRegistration(event)" class="p-5 space-y-3.5 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Full Name (with credentials)</label>
+          <input type="text" id="regDocName" required placeholder="e.g. Dr. Priya Nair, BPT, MIAP" class="w-full border border-slate-300 rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">BPT / Council Reg Number</label>
+            <input type="text" id="regDocLicense" required placeholder="e.g. DCPTOT-98214" class="w-full border border-slate-300 rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Years of Experience</label>
+            <input type="number" id="regDocExp" min="1" max="40" value="4" class="w-full border border-slate-300 rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Base Clinic / Home GPS Center</label>
+          <input type="text" id="regDocLocation" required placeholder="e.g. Saket, New Delhi" class="w-full border border-slate-300 rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Maximum Service Radius for Home Visits</label>
+          <select id="regDocRadius" class="w-full border border-slate-300 rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <option value="10">10 km (Standard Urban Coverage)</option>
+            <option value="12" selected>12 km (Recommended)</option>
+            <option value="15">15 km (Wide Coverage)</option>
+          </select>
+        </div>
+
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-900">
+          <p class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-coins"></i> Partner Earnings Policy:</p>
+          <p class="text-[11px] text-emerald-800 mt-0.5">You keep <strong>70% of every completed consultation</strong>. 30% is deducted for platform booking management, payment gateway, and customer support.</p>
+        </div>
+
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeDoctorRegModal()" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow transition">Submit for Admin Approval</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Patient Bookings Drawer -->
+  <div id="patientBookingsModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-3">
+    <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+          <i class="fa-solid fa-notes-medical text-emerald-600"></i> My Active Bookings
+        </h3>
+        <button onclick="closePatientBookingsModal()" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-4 space-y-3 max-h-96 overflow-y-auto" id="patientBookingsListContainer">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Location / Radius Simulator for Patient -->
+  <div id="patientLocModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-3">
+    <div class="bg-white rounded-3xl w-full max-w-sm p-5 shadow-2xl">
+      <h3 class="text-sm font-bold text-slate-900 mb-2">Simulate Patient Location</h3>
+      <p class="text-xs text-slate-500 mb-4">Select your virtual area in the city to recalculate nearby available doctors within 10-15 km.</p>
+      
+      <div class="space-y-2 text-xs">
+        <button onclick="setPatientLocation('South Ext, New Delhi', 12)" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 transition flex items-center justify-between">
+          <span>South Extension (Central-South)</span>
+          <span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-600">Within 12km</span>
+        </button>
+        <button onclick="setPatientLocation('Dwarka Sector 11, Delhi', 14)" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 transition flex items-center justify-between">
+          <span>Dwarka Sector 11 (West Delhi)</span>
+          <span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-600">Within 14km</span>
+        </button>
+        <button onclick="setPatientLocation('Noida Sector 62', 15)" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 transition flex items-center justify-between">
+          <span>Noida Sector 62 (East Zone)</span>
+          <span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-600">Within 15km</span>
+        </button>
+      </div>
+      <div class="mt-4 pt-2 text-right">
+        <button onclick="closePatientLocModal()" class="text-xs text-slate-500 hover:text-slate-800 font-semibold px-3 py-1.5">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast Container -->
+  <div id="toastMessage" class="fixed bottom-5 right-5 z-50 hidden max-w-xs bg-slate-900 text-white text-xs px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 border border-slate-700">
+    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toastText">Action completed successfully.</span>
+  </div>
+
+  <script>
+    /* ================= DATA & STATE MANAGEMENT ================= */
+    const state = {
+      currentView: 'patient', // 'patient' | 'doctor' | 'admin'
+      isMobileFrame: true,
+      patientLocation: 'South Ext, New Delhi',
+      patientRadiusLimit: 15, // km limit
+      selectedService: 'home', // 'home' | 'clinic' | 'video'
+      matchMode: 'auto', // 'auto' | 'specific'
+      selectedDoctorId: 1,
+      selectedDate: 'Today, 21 Sep',
+      selectedSlot: '10:00 AM - 11:00 AM',
+      selectedConditions: ['Lower Back Pain'],
+      isFirstVideoConsultFree: true,
+
+      // Registered Doctors Master List
+      doctors: [
+        {
+          id: 1,
+          name: "Dr. Ankit Verma",
+          degrees: "BPT, MPT (Ortho)",
+          rating: 4.9,
+          reviews: 84,
+          distanceKm: 3.2,
+          radiusKm: 12,
+          homeVisitFee: 700,
+          clinicFee: 500,
+          videoFee: 400,
+          verified: true,
+          photo: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=120&auto=format&fit=crop&q=80",
+          clinic: "Active Physio Clinic, South Ext",
+          isDutyOn: true
+        },
+        {
+          id: 2,
+          name: "Dr. Shalini Saxena",
+          degrees: "BPT, Neuro Rehab Specialist",
+          rating: 4.8,
+          reviews: 62,
+          distanceKm: 6.5,
+          radiusKm: 14,
+          homeVisitFee: 800,
+          clinicFee: 600,
+          videoFee: 450,
+          verified: true,
+          photo: "https://images.unsplash.com/photo-1594824813571-638f02638520?w=120&auto=format&fit=crop&q=80",
+          clinic: "NeuroMotion Care, Green Park",
+          isDutyOn: true
+        },
+        {
+          id: 3,
+          name: "Dr. Vikram Sethi",
+          degrees: "BPT, Sports & Spine Fellow",
+          rating: 4.7,
+          reviews: 41,
+          distanceKm: 9.8,
+          radiusKm: 15,
+          homeVisitFee: 750,
+          clinicFee: 550,
+          videoFee: 400,
+          verified: true,
+          photo: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=120&auto=format&fit=crop&q=80",
+          clinic: "Peak Spine Center, Lajpat Nagar",
+          isDutyOn: true
+        }
+      ],
+
+      // Doctor Verification Queue for Admin
+      pendingVerifications: [
+        {
+          id: 101,
+          name: "Dr. Neha Gupta",
+          degree: "BPT (Jamia Hamdard)",
+          councilId: "DCPTOT-99410",
+          location: "Rohini, Sector 8",
+          radius: 12,
+          status: "Pending Check"
+        },
+        {
+          id: 102,
+          name: "Dr. Rohan Kapur",
+          degree: "BPT, Certified Ergonomist",
+          councilId: "IAP-L-23491",
+          location: "Janakpuri, Delhi",
+          radius: 10,
+          status: "Pending Check"
+        }
+      ],
+
+      // Platform Bookings Ledger
+      bookings: [
+        {
+          id: "PH-8801",
+          patientName: "Rahul Sharma",
+          doctorName: "Dr. Ankit Verma",
+          service: "Home Visit Physiotherapy",
+          mode: "auto",
+          time: "Today, 10:00 AM",
+          grossAmount: 700,
+          adminFee: 210, // 30%
+          doctorPayout: 490, // 70%
+          status: "Scheduled",
+          condition: "Lower Back Pain"
+        },
+        {
+          id: "PH-8794",
+          patientName: "Meenakshi Das",
+          doctorName: "Dr. Shalini Saxena",
+          service: "Video Consultation",
+          mode: "specific",
+          time: "Yesterday, 04:00 PM",
+          grossAmount: 400,
+          adminFee: 120, // 30%
+          doctorPayout: 280, // 70%
+          status: "Completed",
+          condition: "Cervical Neck Pain"
+        },
+        {
+          id: "PH-8790",
+          patientName: "Kunal Mehra",
+          doctorName: "Dr. Ankit Verma",
+          service: "Home Visit Physiotherapy",
+          mode: "specific",
+          time: "Yesterday, 11:30 AM",
+          grossAmount: 850, // 700 + 150 specific doc fee
+          adminFee: 255, // 30%
+          doctorPayout: 595, // 70%
+          status: "Completed",
+          condition: "Knee Rehab"
+        }
+      ]
+    };
+
+    function switchView(viewName) {
+      state.currentView = viewName;
+
+      // Update Top Tabs
+      ['patient', 'doctor', 'admin'].forEach(v => {
+        const btn = document.getElementById('tab-' + v);
+        if (v === viewName) {
+          btn.className = "role-tab px-3 py-1.5 rounded-lg transition-all text-white bg-emerald-600 shadow flex items-center gap-1.5";
+        } else {
+          btn.className = "role-tab px-3 py-1.5 rounded-lg transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
+        }
+      });
+
+      // Show/Hide Section
+      document.getElementById('patientView').classList.add('hidden');
+      document.getElementById('doctorView').classList.add('hidden');
+      document.getElementById('adminView').classList.add('hidden');
+
+      if (viewName === 'patient') {
+        document.getElementById('patientView').classList.remove('hidden');
+      } else if (viewName === 'doctor') {
+        document.getElementById('doctorView').classList.remove('hidden');
+        renderDoctorAppointments();
+      } else if (viewName === 'admin') {
+        document.getElementById('adminView').classList.remove('hidden');
+        renderAdminDashboard();
+      }
+    }
+
+    function toggleDeviceFrame() {
+      state.isMobileFrame = !state.isMobileFrame;
+      const wrapper = document.getElementById('wrapperBox');
+      const notch = document.getElementById('notchBar');
+      const btnText = document.getElementById('frameToggleText');
+
+      if (state.isMobileFrame) {
+        wrapper.className = "mobile-frame bg-slate-50";
+        notch.classList.remove('hidden');
+        btnText.textContent = "Full View";
+      } else {
+        wrapper.className = "max-w-5xl mx-auto";
+        notch.classList.add('hidden');
+        btnText.textContent = "Mobile Frame";
+      }
+    }
+
+    function selectServiceMode(mode) {
+      state.selectedService = mode;
+
+      ['home', 'clinic', 'video'].forEach(m => {
+        const btn = document.getElementById('mode-' + m);
+        const iconContainer = btn.querySelector('div');
+        if (m === mode) {
+          btn.className = "service-mode-btn bg-white border-2 border-emerald-500 p-3 rounded-2xl text-center shadow-sm transition";
+          iconContainer.className = "w-10 h-10 mx-auto rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1 text-base";
+        } else {
+          btn.className = "service-mode-btn bg-white border border-slate-200 p-3 rounded-2xl text-center shadow-sm transition hover:border-slate-300";
+          iconContainer.className = "w-10 h-10 mx-auto rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center mb-1 text-base";
+        }
+      });
+
+      calculateAndRenderPrice();
+    }
+
+    function handleMatchTypeChange(type) {
+      state.matchMode = type;
+      const boxAuto = document.getElementById('boxMatchAuto');
+      const boxSpecific = document.getElementById('boxMatchSpecific');
+      const pickerArea = document.getElementById('specificDoctorPickerArea');
+
+      if (type === 'auto') {
+        boxAuto.className = "relative flex flex-col p-3 rounded-xl border-2 border-emerald-500 bg-emerald-50/40 cursor-pointer transition hover:bg-emerald-50";
+        boxSpecific.className = "relative flex flex-col p-3 rounded-xl border border-slate-200 bg-white cursor-pointer transition hover:border-emerald-300";
+        pickerArea.classList.add('hidden');
+      } else {
+        boxSpecific.className = "relative flex flex-col p-3 rounded-xl border-2 border-emerald-500 bg-emerald-50/40 cursor-pointer transition hover:bg-emerald-50";
+        boxAuto.className = "relative flex flex-col p-3 rounded-xl border border-slate-200 bg-white cursor-pointer transition hover:border-emerald-300";
+        pickerArea.classList.remove('hidden');
+        renderDoctorRadioCards();
+      }
+
+      calculateAndRenderPrice();
+    }
+
+    function renderDoctorRadioCards() {
+      const container = document.getElementById('doctorSelectList');
+      container.innerHTML = state.doctors.map(doc => {
+        const isSelected = doc.id === state.selectedDoctorId;
+        return `
+          <div onclick="selectSpecificDoctor(${doc.id})" class="p-2.5 rounded-xl border ${isSelected ? 'border-emerald-600 bg-emerald-50/40' : 'border-slate-200 hover:border-slate-300'} cursor-pointer flex items-center justify-between transition">
+            <div class="flex items-center space-x-2.5">
+              <img src="${doc.photo}" class="w-10 h-10 rounded-full object-cover border border-emerald-200" alt="${doc.name}">
+              <div>
+                <p class="text-xs font-bold text-slate-800">${doc.name}</p>
+                <p class="text-[10px] text-slate-500">${doc.degrees} &bull; ${doc.clinic}</p>
+                <div class="flex items-center gap-2 mt-0.5 text-[10px]">
+                  <span class="text-amber-500 font-bold"><i class="fa-solid fa-star"></i> ${doc.rating}</span>
+                  <span class="text-slate-400">&bull;</span>
+                  <span class="text-emerald-600 font-medium"><i class="fa-solid fa-route"></i> ${doc.distanceKm} km away</span>
+                </div>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-xs font-bold ${isSelected ? 'text-emerald-700' : 'text-slate-700'}">₹${doc.homeVisitFee}</span>
+              <span class="block text-[9px] text-slate-400">Home base</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectSpecificDoctor(id) {
+      state.selectedDoctorId = id;
+      renderDoctorRadioCards();
+      calculateAndRenderPrice();
+    }
+
+    function toggleConditionTag(btn, conditionName) {
+      if (state.selectedConditions.includes(conditionName)) {
+        state.selectedConditions = state.selectedConditions.filter(c => c !== conditionName);
+        btn.className = "cond-tag px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-xs hover:border-slate-300";
+      } else {
+        state.selectedConditions.push(conditionName);
+        btn.className = "cond-tag px-3 py-1.5 rounded-xl border border-emerald-500 bg-emerald-50 text-emerald-700 font-medium text-xs";
+      }
+    }
+
+    function selectDay(btn, dayStr) {
+      state.selectedDate = dayStr;
+      document.querySelectorAll('.day-btn').forEach(b => {
+        b.className = "day-btn py-2 px-1 text-center rounded-xl border border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-semibold";
+      });
+      btn.className = "day-btn py-2 px-1 text-center rounded-xl border-2 border-emerald-600 bg-emerald-50/50 text-slate-800 text-xs font-semibold";
+    }
+
+    function selectTimeSlot(btn, slotStr) {
+      state.selectedSlot = slotStr;
+      document.querySelectorAll('.time-btn').forEach(b => {
+        b.className = "time-btn border border-slate-200 hover:border-slate-300 text-slate-700 py-1.5 px-2 rounded-lg text-xs font-medium text-center";
+      });
+      btn.className = "time-btn border-2 border-emerald-600 bg-emerald-50 text-emerald-800 py-1.5 px-2 rounded-lg text-xs font-medium text-center";
+    }
+
+    function calculateAndRenderPrice() {
+      let basePrice = 700;
+      let serviceLabel = "Home Visit";
+
+      if (state.selectedService === 'clinic') {
+        basePrice = 500;
+        serviceLabel = "Clinic Visit";
+      } else if (state.selectedService === 'video') {
+        basePrice = 400;
+        serviceLabel = "Video Consultation";
+      }
+
+      let extraFee = 0;
+      const specificRow = document.getElementById('specificFeeRow');
+      if (state.matchMode === 'specific') {
+        extraFee = 150; // Custom Doctor fee
+        specificRow.style.display = 'flex';
+      } else {
+        specificRow.style.display = 'none';
+      }
+
+      let gross = basePrice + extraFee;
+      let discount = 0;
+      const discountRow = document.getElementById('discountRow');
+
+      // 1st Video Call is Free logic
+      if (state.selectedService === 'video' && state.isFirstVideoConsultFree) {
+        discount = 400; // Base video consultation free
+        discountRow.style.display = 'flex';
+        document.getElementById('summaryDiscount').textContent = `-₹${discount}`;
+      } else {
+        discountRow.style.display = 'none';
+      }
+
+      let netPayable = Math.max(0, gross - discount);
+
+      // Financial cut transparency: 30% to platform, 70% to doctor
+      const platformCut = Math.round(netPayable * 0.30);
+
+      document.getElementById('summaryServiceName').textContent = serviceLabel;
+      document.getElementById('summaryBasePrice').textContent = `₹${basePrice}`;
+      document.getElementById('summaryFinalPrice').textContent = `₹${netPayable}`;
+      document.getElementById('summaryCutInfo').textContent = `₹${platformCut} (Platform 30% ops share)`;
+
+      return {
+        gross: netPayable,
+        platformFee: platformCut,
+        doctorPayout: netPayable - platformCut,
+        serviceLabel
+      };
+    }
+
+    function proceedToBookingConfirmation() {
+      const { gross, platformFee, doctorPayout, serviceLabel } = calculateAndRenderPrice();
+      const targetDoctor = state.matchMode === 'specific' 
+        ? state.doctors.find(d => d.id === state.selectedDoctorId)
+        : state.doctors[0]; // Nearest auto assigned
+
+      const newBooking = {
+        id: `PH-${Math.floor(1000 + Math.random() * 9000)}`,
+        patientName: "Rahul Sharma",
+        doctorName: targetDoctor.name,
+        service: `${serviceLabel} (${state.selectedConditions.join(', ') || 'General Mobility'})`,
+        mode: state.matchMode,
+        time: `${state.selectedDate} at ${state.selectedSlot}`,
+        grossAmount: gross,
+        adminFee: platformFee,
+        doctorPayout: doctorPayout,
+        status: "Scheduled",
+        condition: state.selectedConditions[0] || 'Mobility Rehab'
+      };
+
+      // Push to central state
+      state.bookings.unshift(newBooking);
+
+      // If video consultation, trigger mock consultation flow or prompt
+      if (state.selectedService === 'video') {
+        state.isFirstVideoConsultFree = false; // Claimed
+        showToast("Booking Confirmed! Free Consultation Activated.");
+        setTimeout(() => {
+          openVideoCallModal(targetDoctor.name);
+        }, 1200);
+      } else {
+        showToast(`Booked successfully with ${targetDoctor.name} within your radius!`);
+      }
+
+      // Update badge
+      document.getElementById('bookingCountBadge').textContent = state.bookings.length;
+      calculateAndRenderPrice();
+    }
+
+    function startQuickVideoBook() {
+      selectServiceMode('video');
+      const el = document.getElementById('summaryFinalPrice');
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    let callTimerInterval = null;
+    let callSecondsRemaining = 15 * 60; // 15 mins consultation
+
+    function openVideoCallModal(doctorName = "Dr. Ankit Verma") {
+      document.getElementById('videoDoctorTitle').textContent = `Consultation: ${doctorName} (BPT)`;
+      document.getElementById('videoModal').classList.remove('hidden');
+      document.getElementById('videoModal').classList.add('flex');
+      
+      callSecondsRemaining = 15 * 60;
+      clearInterval(callTimerInterval);
+      callTimerInterval = setInterval(() => {
+        if (callSecondsRemaining <= 0) {
+          clearInterval(callTimerInterval);
+          endVideoCall();
+          return;
+        }
+        callSecondsRemaining--;
+        const mins = Math.floor(callSecondsRemaining / 60);
+        const secs = callSecondsRemaining % 60;
+        document.getElementById('callTimerDisplay').textContent = `${mins}:${secs < 10 ? '0' : ''}${secs} left`;
+      }, 1000);
+    }
+
+    function endVideoCall() {
+      clearInterval(callTimerInterval);
+      document.getElementById('videoModal').classList.add('hidden');
+      document.getElementById('videoModal').classList.remove('flex');
+      showToast("Consultation ended. Assessment notes will be shared shortly.");
+    }
+
+    function toggleCallControl(btn, type) {
+      btn.classList.toggle('bg-red-600');
+      btn.classList.toggle('bg-slate-800');
+      showToast(`${type === 'mic' ? 'Microphone' : 'Camera'} state updated.`);
+    }
+
+    function renderDoctorAppointments() {
+      const container = document.getElementById('doctorAppointmentsList');
+      const filtered = state.bookings.filter(b => b.doctorName.includes("Ankit Verma"));
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">No active appointments found.</p>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => `
+        <div class="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-200 transition">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span class="text-[10px] font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold">${item.id}</span>
+              <h4 class="text-xs font-bold text-slate-900 mt-1">${item.patientName} &bull; <span class="text-emerald-700 font-semibold">${item.service}</span></h4>
+              <p class="text-[11px] text-slate-500"><i class="fa-regular fa-clock text-slate-400 mr-1"></i>${item.time}</p>
+            </div>
+            <div class="text-right">
+              <span class="text-xs font-extrabold text-emerald-700">₹${item.doctorPayout}</span>
+              <span class="block text-[10px] text-slate-400">(Your 70% share)</span>
+            </div>
+          </div>
+          <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-[10px] text-slate-500"><i class="fa-solid fa-location-arrow text-emerald-600"></i> South Ext (~3.2 km within 12km zone)</span>
+            <div class="flex items-center gap-1.5">
+              ${item.service.includes('Video') 
+                ? `<button onclick="openVideoCallModal('${item.doctorName}')" class="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-[10px] font-bold hover:bg-emerald-700"><i class="fa-solid fa-video mr-1"></i> Start Call</button>`
+                : `<button onclick="showToast('Navigating to patient address via GPS...')" class="px-2.5 py-1 bg-slate-800 text-white rounded-lg text-[10px] font-bold hover:bg-slate-700"><i class="fa-solid fa-map-pin mr-1"></i> Directions</button>`
+              }
+              <button onclick="markAppointmentDone('${item.id}')" class="px-2.5 py-1 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-[10px] font-semibold">Complete</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Update doctor stats
+      const totalEarned = filtered.reduce((acc, curr) => acc + curr.doctorPayout, 18200);
+      document.getElementById('docEarningsDisplay').textContent = `₹${totalEarned.toLocaleString('en-IN')}`;
+    }
+
+    function markAppointmentDone(bookingId) {
+      const target = state.bookings.find(b => b.id === bookingId);
+      if (target) {
+        target.status = "Completed";
+        showToast(`Consultation ${bookingId} marked as completed.`);
+        renderDoctorAppointments();
+      }
+    }
+
+    function toggleDoctorDuty(toggle) {
+      const label = document.getElementById('doctorStatusLabel');
+      if (toggle.checked) {
+        label.textContent = "Accepting Patients";
+        label.className = "text-xs font-semibold text-slate-700";
+        showToast("You are now ONLINE. Patients within your radius can book you.");
+      } else {
+        label.textContent = "Duty Paused";
+        label.className = "text-xs font-semibold text-red-600";
+        showToast("You are currently OFFLINE. New bookings paused.");
+      }
+    }
+
+    function updateRadius(val) {
+      document.getElementById('radiusDisplay').textContent = `${val} km`;
+      showToast(`Service radius updated to ${val} km.`);
+    }
+
+    function renderAdminDashboard() {
+      // Calculate financial split metrics
+      const totalVolume = state.bookings.reduce((sum, b) => sum + b.grossAmount, 138000);
+      const admin30 = Math.round(totalVolume * 0.30);
+      const doctor70 = totalVolume - admin30;
+
+      document.getElementById('adminTotalVolume').textContent = `₹${totalVolume.toLocaleString('en-IN')}`;
+      document.getElementById('adminRevenue30').textContent = `₹${admin30.toLocaleString('en-IN')}`;
+      document.getElementById('adminDoctorPayout70').textContent = `₹${doctor70.toLocaleString('en-IN')}`;
+
+      // Render Pending Doctor Approvals
+      const approvalTable = document.getElementById('adminDoctorApprovalRows');
+      approvalTable.innerHTML = state.pendingVerifications.map(item => `
+        <tr class="hover:bg-slate-50">
+          <td class="p-3 font-semibold text-slate-800">${item.name}</td>
+          <td class="p-3 text-slate-600">${item.degree} <br><span class="text-[10px] text-slate-400">${item.councilId}</span></td>
+          <td class="p-3 text-slate-600">${item.location}</td>
+          <td class="p-3 font-bold text-emerald-700">${item.radius} km max</td>
+          <td class="p-3"><span class="px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold">${item.status}</span></td>
+          <td class="p-3 text-right">
+            <button onclick="approveDoctorRegistration(${item.id})" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold mr-1">Approve</button>
+            <button onclick="rejectDoctorRegistration(${item.id})" class="px-2 py-1 text-slate-400 hover:text-red-600 text-[10px]">Decline</button>
+          </td>
+        </tr>
+      `).join('');
+
+      // Render Transaction Ledger
+      const txTable = document.getElementById('adminTransactionsBody');
+      txTable.innerHTML = state.bookings.map(b => `
+        <tr class="hover:bg-slate-50">
+          <td class="p-2.5 font-bold text-slate-800">${b.id}</td>
+          <td class="p-2.5 font-sans">${b.patientName}</td>
+          <td class="p-2.5 font-sans text-slate-600">${b.doctorName}</td>
+          <td class="p-2.5 font-sans">${b.service}</td>
+          <td class="p-2.5 font-bold">₹${b.grossAmount}</td>
+          <td class="p-2.5 text-emerald-700 font-bold">₹${b.adminFee}</td>
+          <td class="p-2.5 text-blue-700 font-bold">₹${b.doctorPayout}</td>
+          <td class="p-2.5 font-sans"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${b.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${b.status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function approveDoctorRegistration(docId) {
+      const doc = state.pendingVerifications.find(d => d.id === docId);
+      if (doc) {
+        state.pendingVerifications = state.pendingVerifications.filter(d => d.id !== docId);
+        showToast(`Approved ${doc.name}! Added to live booking network.`);
+        renderAdminDashboard();
+      }
+    }
+
+    function rejectDoctorRegistration(docId) {
+      state.pendingVerifications = state.pendingVerifications.filter(d => d.id !== docId);
+      showToast("Application rejected.");
+      renderAdminDashboard();
+    }
+
+    function openDoctorRegModal() {
+      document.getElementById('doctorRegModal').classList.remove('hidden');
+      document.getElementById('doctorRegModal').classList.add('flex');
+    }
+
+    function closeDoctorRegModal() {
+      document.getElementById('doctorRegModal').classList.add('hidden');
+      document.getElementById('doctorRegModal').classList.remove('flex');
+    }
+
+    function submitDoctorRegistration(e) {
+      e.preventDefault();
+      const name = document.getElementById('regDocName').value;
+      const council = document.getElementById('regDocLicense').value;
+      const loc = document.getElementById('regDocLocation').value;
+      const rad = document.getElementById('regDocRadius').value;
+
+      state.pendingVerifications.push({
+        id: Date.now(),
+        name: name,
+        degree: "BPT Qualified",
+        councilId: council,
+        location: loc,
+        radius: parseInt(rad),
+        status: "Pending Check"
+      });
+
+      closeDoctorRegModal();
+      showToast("Application submitted! Admin will verify BPT council license.");
+      renderAdminDashboard();
+    }
+
+    function openPatientBookingsList() {
+      const modal = document.getElementById('patientBookingsModal');
+      const list = document.getElementById('patientBookingsListContainer');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      list.innerHTML = state.bookings.map(b => `
+        <div class="p-3 rounded-2xl border border-slate-200 bg-slate-50 space-y-1">
+          <div class="flex justify-between items-center">
+            <span class="text-[10px] font-mono text-slate-500 font-bold">${b.id}</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded ${b.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${b.status}</span>
+          </div>
+          <p class="text-xs font-bold text-slate-800">${b.doctorName}</p>
+          <p class="text-[11px] text-slate-600">${b.service} &bull; ${b.time}</p>
+          <div class="pt-1 flex justify-between items-center text-xs font-semibold">
+            <span class="text-slate-500">Amount Paid:</span>
+            <span class="text-emerald-700 font-bold">₹${b.grossAmount}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function closePatientBookingsModal() {
+      document.getElementById('patientBookingsModal').classList.add('hidden');
+      document.getElementById('patientBookingsModal').classList.remove('flex');
+    }
+
+    function changePatientLocationModal() {
+      document.getElementById('patientLocModal').classList.remove('hidden');
+      document.getElementById('patientLocModal').classList.add('flex');
+    }
+
+    function closePatientLocModal() {
+      document.getElementById('patientLocModal').classList.add('hidden');
+      document.getElementById('patientLocModal').classList.remove('flex');
+    }
+
+    function setPatientLocation(locName, radiusKm) {
+      state.patientLocation = locName;
+      state.patientRadiusLimit = radiusKm;
+      document.getElementById('patientCurrentLocText').textContent = `${locName} (Within ${radiusKm}km)`;
+      closePatientLocModal();
+      showToast(`Location set to ${locName}. Therapists filtered.`);
+    }
+
+    let toastTimeout = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toastMessage');
+      const text = document.getElementById('toastText');
+      text.textContent = msg;
+      toast.classList.remove('hidden');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 3200);
+    }
+
+    // Initialize initial calculations & view
+    window.onload = function() {
+      toggleDeviceFrame(); // default to mobile view frame for patient
+      calculateAndRenderPrice();
+    };
+  </script>
+</body>
+</html>
